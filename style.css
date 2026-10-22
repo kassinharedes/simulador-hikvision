@@ -18,3 +18,13 @@
 .photo-modal-box img{display:block;max-width:100%;max-height:70vh;margin:0 auto 12px;object-fit:contain}
 .photo-close{position:absolute;right:10px;top:10px;border-radius:50%;width:36px;height:36px;padding:0;font-size:24px}
 @media(max-width:520px){.product-layout{grid-template-columns:90px 1fr}.product-photo{height:90px}}
+
+/* V13: upload de fotos por SKU */
+.product-photo{position:relative;flex-shrink:0;overflow:visible}
+.product-photo img{border-radius:inherit}
+.foto-plus{position:absolute;right:-7px;top:-7px;width:33px;height:33px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;background:#1769d2;color:#fff;border:2px solid #fff;font-size:23px;line-height:1;cursor:pointer;box-shadow:0 2px 8px #0003;z-index:2}
+.foto-plus:hover{background:#0b4f9f}
+.foto-remover{position:absolute;right:-7px;bottom:-7px;width:26px;height:26px;border-radius:50%;padding:0;background:#fff;color:#bd2838;border:1px solid #e4e7ec;font-size:20px;line-height:1;cursor:pointer;z-index:2}
+
+/* O seletor de fotos deve abrir apenas ao clicar no + do produto. */
+#uploadFotoSKU, input[type="file"][hidden] {display:none !important;}

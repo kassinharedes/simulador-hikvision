@@ -1,5 +1,18 @@
-VERSÃO 12 - IMAGENS DE OUTUBRO
-Novas imagens vinculadas por SKU/modelo: 31
-Fotos totais: 87 de 965 produtos.
-Imagens sem correspondência segura não foram vinculadas.
-Para publicar: envie todos os arquivos e a pasta images completa ao GitHub.
+SIMULADOR HIKVISION V13 — BOTÃO + NAS FOTOS
+
+Na aba Produtos, clique no botão + sobre a foto de qualquer SKU.
+Selecione uma imagem JPG, PNG ou WebP de até 8 MB.
+A imagem aparece no produto e fica salva no navegador usando IndexedDB.
+Para substituir, clique no + novamente. Para remover a foto personalizada, clique no ×.
+
+ATENÇÃO: as fotos enviadas pelo botão + ficam SOMENTE no navegador/aparelho
+onde foram cadastradas. Não são publicadas no GitHub e não são compartilhadas
+entre dispositivos. Limpar os dados do site pode apagar as fotos personalizadas.
+Fotos originais incluídas na pasta images continuam no pacote.
+
+PARA ATUALIZAR O GITHUB PAGES:
+Copie todos os arquivos e a pasta images deste ZIP para a pasta local do repositório
+simulador-hikvision, substituindo os arquivos antigos. No GitHub Desktop,
+faça Commit to main e Push origin. Não envie o ZIP diretamente.
+
+O repositório público expõe os preços comerciais. Confirme autorização para publicação.

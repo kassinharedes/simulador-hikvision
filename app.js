@@ -1,4 +1,96 @@
-function fotoProduto(p){return p.image?`<div class="product-photo"><img src="${p.image}" alt="${p.part}" loading="lazy" onclick="ampliarFoto(this.src,this.alt)"></div>`:`<div class="product-photo"><div class="no-photo">SEM FOTO</div></div>`;}
+// Fotos escolhidas pelo usuário ficam no IndexedDB deste navegador.
+const fotosPersonalizadas = new Map();
+const fotosObjectURLs = new Map();
+const chaveFoto = p => String(p.uid || (String(p.sap || "") + "|" + String(p.part || "")));
+let bancoFotos = null;
+function abrirBancoFotos(){
+  return new Promise((resolve,reject)=>{
+    if(!("indexedDB" in window)){reject(new Error("Armazenamento indisponível"));return;}
+    const req=indexedDB.open("simuladorHikvisionFotos",1);
+    req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains("fotos"))db.createObjectStore("fotos");};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+function fotoTransacao(chave,blob){
+  return new Promise((resolve,reject)=>{
+    const tx=bancoFotos.transaction("fotos","readwrite");
+    const req=blob===null?tx.objectStore("fotos").delete(chave):tx.objectStore("fotos").put(blob,chave);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+    req.onerror=()=>reject(req.error);
+  });
+}
+function fotoSrc(p){
+  const key=chaveFoto(p);
+  return fotosObjectURLs.get(key)||p.image||"";
+}
+function fotoProduto(p){
+  const key=chaveFoto(p),src=fotoSrc(p),custom=fotosPersonalizadas.has(key);
+  // Não colocar nomes de arquivos do usuário em atributos inline.
+  return `<div class="product-photo">${src?`<img src="${src}" alt="Foto do produto" loading="lazy">`:`<div class="no-photo">SEM FOTO</div>`}
+    <button type="button" class="foto-plus" data-foto-id="${encodeURIComponent(key)}" title="Adicionar ou substituir foto" aria-label="Adicionar ou substituir foto">+</button>
+    ${custom?`<button type="button" class="foto-remover" data-remover-id="${encodeURIComponent(key)}" title="Remover foto personalizada" aria-label="Remover foto personalizada">×</button>`:""}
+  </div>`;
+}
+function selecionarFoto(chave){
+  const input=document.getElementById("uploadFotoSKU");
+  input.value="";
+  input.dataset.chave=chave;
+  input.click();
+}
+async function carregarFotos(){
+  try{
+    bancoFotos=await abrirBancoFotos();
+    const tx=bancoFotos.transaction("fotos","readonly"),req=tx.objectStore("fotos").openCursor();
+    req.onsuccess=()=>{
+      const cursor=req.result;
+      if(cursor){
+        if(cursor.value instanceof Blob){
+          fotosPersonalizadas.set(cursor.key,cursor.value);
+          fotosObjectURLs.set(cursor.key,URL.createObjectURL(cursor.value));
+        }
+        cursor.continue();
+      }else if(typeof renderProducts==="function")renderProducts();
+    };
+  }catch(err){console.warn("Fotos locais indisponíveis:",err);}
+}
+document.addEventListener("DOMContentLoaded",()=>{
+  const input=document.createElement("input");
+  input.id="uploadFotoSKU";input.type="file";input.accept="image/png,image/jpeg,image/webp";input.hidden=true;
+  document.body.appendChild(input);
+  input.addEventListener("change",async()=>{
+    const file=input.files&&input.files[0],key=input.dataset.chave;
+    if(!file||!key)return;
+    if(!["image/png","image/jpeg","image/webp"].includes(file.type)){alert("Selecione uma imagem JPG, PNG ou WebP.");return;}
+    if(file.size>8*1024*1024){alert("Escolha uma foto de até 8 MB.");return;}
+    if(!bancoFotos){alert("O navegador não permite salvar fotos neste momento.");return;}
+    try{
+      await fotoTransacao(key,file);
+      const anterior=fotosObjectURLs.get(key);if(anterior)URL.revokeObjectURL(anterior);
+      fotosPersonalizadas.set(key,file);
+      fotosObjectURLs.set(key,URL.createObjectURL(file));
+      renderProducts();
+    }catch(err){alert("Não foi possível salvar a foto. Verifique o espaço disponível no navegador.");}
+  });
+  document.addEventListener("click",async e=>{
+    const plus=e.target.closest("[data-foto-id]");
+    if(plus){selecionarFoto(decodeURIComponent(plus.dataset.fotoId));return;}
+    const rem=e.target.closest("[data-remover-id]");
+    if(rem){
+      const key=decodeURIComponent(rem.dataset.removerId);
+      if(!confirm("Remover a foto personalizada deste produto?"))return;
+      try{
+        if(!bancoFotos)throw Error("Banco indisponível");
+        await fotoTransacao(key,null);
+        const url=fotosObjectURLs.get(key);if(url)URL.revokeObjectURL(url);
+        fotosObjectURLs.delete(key);fotosPersonalizadas.delete(key);renderProducts();
+      }catch(err){alert("Não foi possível remover a foto.");}
+    }
+  });
+  carregarFotos();
+});
+
 const $=x=>document.getElementById(x),fields=["produto","valor","ipi","st","credito","margem","icms","tributos","frete","comissao","desconto"],nums=fields.slice(1),n=x=>parseFloat($(x).value)||0,brl=x=>x.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 function calc(){let val=n("valor"),ipi=val*n("ipi")/100,br=val+ipi+n("st"),cr=val*n("credito")/100,liq=br-cr,p=(n("margem")+n("icms")+n("tributos")+n("frete")+n("comissao"))/100,v=0,pr=0;if(p>=1)$("alerta").textContent="A soma dos percentuais deve ser menor que 100%.";else{$("alerta").textContent="";v=liq/(1-p);pr=v*(1-n("desconto")/100)}let m=liq?v/liq-1:0,mp=liq?pr/liq-1:0;$("rIpi").textContent=brl(ipi);$("rBruto").textContent=brl(br);$("rCredito").textContent=brl(cr);$("rLiquido").textContent=brl(liq);$("venda").textContent=brl(v);$("promo").textContent=brl(pr);$("markup").textContent=(m*100).toFixed(2).replace(".",",")+"%";$("markupX").textContent=(m+1).toFixed(2).replace(".",",")+"x";$("markupP").textContent=(mp*100).toFixed(2).replace(".",",")+"%";$("markupPX").textContent=(mp+1).toFixed(2).replace(".",",")+"x";return{liq,v,pr,m,mp}}
 nums.forEach(x=>$(x).oninput=calc);
